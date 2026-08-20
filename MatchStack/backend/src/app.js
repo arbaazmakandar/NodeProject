@@ -3,6 +3,8 @@ const connectDB = require("./config/database");
 const User = require("./models/user");
 const bcrypt = require("bcrypt");
 const { validateSignUp } = require("./utils/validation");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 
 const app = express(); // Instance of expressJS application
 
@@ -75,13 +77,26 @@ app.post("/login", async (req, res) => {
       return res.status(404).send("Invalid Credentials");
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
+
     if (!isPasswordValid) {
       return res.status(401).send("Invalid Credentials");
     }
+    const token = jwt.sign({ userId: user._id }, "your_secret_key", {
+      expiresIn: "1h",
+    }); // Generate JWT token with user ID and secret key
+    res.cookie("token", token); // Set the token in a cookie
     res.send("Login successful");
   } catch (error) {
     res.status(500).send("Error during login: " + error.message);
   }
+});
+
+app.use(cookieParser()); // Middleware to parse cookies
+
+app.get("/profile", (req, res) => {
+  const cookies = req.cookies; // Access cookies from the request
+  console.log("Cookies:", cookies);
+  res.send("Profile data retrieved successfully");
 });
 
 //get user by emailId
